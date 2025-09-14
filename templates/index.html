@@ -241,7 +241,7 @@
         
         <!-- Cryptocurrency Chart -->
         <div class="chart-section">
-            <h2>₿ Cryptocurrency Chart</h2>
+            <h2>₿ Cryptocurrency Chart <span style="color: #00ff88; font-size: 0.8em;">(with Buy/Sell Analysis)</span></h2>
             <div class="input-group">
                 <label for="crypto-symbol">Crypto Symbol:</label>
                 <input type="text" id="crypto-symbol" placeholder="e.g., BTC" value="BTC">
@@ -253,6 +253,14 @@
                     <option value="2y">2 Years</option>
                 </select>
                 <button onclick="showCryptoChart()">Show Crypto Chart</button>
+            </div>
+            
+            <div style="margin: 10px 0; padding: 10px; background: rgba(0,255,136,0.1); border-radius: 5px; border-left: 3px solid #00ff88;">
+                <strong>🟢 Buy/Sell Analysis Features:</strong><br>
+                • <span style="color: #00ff88;">Green bars</span> = Buy volume (bullish pressure)<br>
+                • <span style="color: #ff4444;">Red bars</span> = Sell volume (bearish pressure)<br>  
+                • Buy/Sell ratio indicator for trading decisions<br>
+                • Net volume showing overall market sentiment
             </div>
             
             <div class="popular-stocks">

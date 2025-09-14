@@ -15,6 +15,7 @@ import base64
 import matplotlib
 matplotlib.use('Agg')  # Use non-interactive backend
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 
 app = Flask(__name__)
 fetcher = StockFetcher()
@@ -153,40 +154,97 @@ def get_stock_list():
 
 @app.route('/crypto/<symbol>')
 def crypto_chart(symbol):
-    """Display individual cryptocurrency chart."""
+    """Display individual cryptocurrency chart with buy/sell analysis."""
     period = request.args.get('period', '1y')
     
-    # Generate chart in memory
-    data = fetcher.get_crypto_data(symbol, period)
+    # Try to get buy/sell data first
+    timeframe_map = {
+        '5d': ('1h', 120),
+        '1mo': ('4h', 180),
+        '3mo': ('1d', 90),
+        '6mo': ('1d', 180),
+        '1y': ('1d', 365),
+        '2y': ('1d', 730)
+    }
+    
+    timeframe, limit = timeframe_map.get(period, ('1d', 100))
+    data = fetcher.get_crypto_buy_sell_data(symbol, timeframe, limit)
+    
+    # Fallback to regular data if buy/sell data not available
     if data is None or data.empty:
-        return jsonify({'error': f'No crypto data available for {symbol}'}), 404
+        data = fetcher.get_crypto_data(symbol, period)
+        if data is None or data.empty:
+            return jsonify({'error': f'No crypto data available for {symbol}'}), 404
+        has_buysell = False
+    else:
+        has_buysell = True
     
-    # Create chart
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10), height_ratios=[3, 1])
+    # Create chart with appropriate number of subplots
+    fig, axes = plt.subplots(3 if has_buysell else 2, 1, figsize=(12, 12 if has_buysell else 10))
+    if not has_buysell:
+        axes = [axes[0], axes[1]]
+    else:
+        axes = [axes[0], axes[1], axes[2]]
     
-    # Price chart with crypto styling
-    ax1.plot(data.index, data['Close'], label=f'{symbol.upper()}/USD Price', linewidth=2.5, color='#f7931a')
-    ax1.fill_between(data.index, data['Low'], data['High'], alpha=0.2, color='#f7931a', label='Daily Range')
-    ax1.set_title(f'{symbol.upper()}/USD Price - {period.upper()}', fontsize=16, fontweight='bold')
-    ax1.set_ylabel('Price (USD)', fontsize=12)
-    ax1.legend()
-    ax1.grid(True, alpha=0.3)
+    # Price chart
+    axes[0].plot(data.index, data['Close'], label=f'{symbol.upper()}/USD Price', linewidth=2.5, color='#f7931a')
+    axes[0].fill_between(data.index, data['Low'], data['High'], alpha=0.2, color='#f7931a', label='Daily Range')
+    axes[0].set_title(f'{symbol.upper()}/USD Price - {period.upper()}', fontsize=16, fontweight='bold')
+    axes[0].set_ylabel('Price (USD)', fontsize=12)
+    axes[0].legend()
+    axes[0].grid(True, alpha=0.3)
     
-    # Format price with appropriate decimals
+    # Format price
     current_price = data['Close'].iloc[-1]
     if current_price < 1:
-        ax1.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'${x:.4f}'))
+        axes[0].yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'${x:.4f}'))
     elif current_price < 100:
-        ax1.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'${x:.2f}'))
+        axes[0].yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'${x:.2f}'))
     else:
-        ax1.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'${x:,.0f}'))
+        axes[0].yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'${x:,.0f}'))
     
-    # Volume chart
-    ax2.bar(data.index, data['Volume'], alpha=0.7, color='#627eea')
-    ax2.set_title('Volume', fontsize=14)
-    ax2.set_ylabel('Volume', fontsize=12)
-    ax2.set_xlabel('Date', fontsize=12)
-    ax2.grid(True, alpha=0.3)
+    if has_buysell:
+        # Buy/Sell Volume chart
+        axes[1].bar(data.index, data['BuyVolume'], alpha=0.8, color='#00ff88', label='Buy Volume', width=0.8)
+        axes[1].bar(data.index, -data['SellVolume'], alpha=0.8, color='#ff4444', label='Sell Volume', width=0.8)
+        axes[1].set_title('Buy/Sell Volume Analysis', fontsize=14, fontweight='bold')
+        axes[1].set_ylabel('Volume', fontsize=12)
+        axes[1].legend()
+        axes[1].grid(True, alpha=0.3)
+        axes[1].axhline(y=0, color='black', linestyle='-', alpha=0.5)
+        
+        # Add buy/sell ratio as text
+        avg_ratio = data['BuySellRatio'].mean()
+        ratio_color = '#00ff88' if avg_ratio > 1 else '#ff4444'
+        axes[1].text(0.02, 0.95, f'Avg Buy/Sell Ratio: {avg_ratio:.2f}', 
+                   transform=axes[1].transAxes, fontsize=12, fontweight='bold',
+                   bbox=dict(boxstyle='round', facecolor=ratio_color, alpha=0.2))
+        
+        # Net Volume (Buy - Sell) chart
+        net_positive = data['NetVolume'] >= 0
+        axes[2].bar(data.index[net_positive], data['NetVolume'][net_positive], 
+                   alpha=0.8, color='#00ff88', label='Net Buying', width=0.8)
+        axes[2].bar(data.index[~net_positive], data['NetVolume'][~net_positive], 
+                   alpha=0.8, color='#ff4444', label='Net Selling', width=0.8)
+        axes[2].set_title('Net Volume (Buy - Sell)', fontsize=14, fontweight='bold')
+        axes[2].set_ylabel('Net Volume', fontsize=12)
+        axes[2].set_xlabel('Date', fontsize=12)
+        axes[2].legend()
+        axes[2].grid(True, alpha=0.3)
+        axes[2].axhline(y=0, color='black', linestyle='-', alpha=0.5)
+    else:
+        # Regular total volume chart
+        axes[1].bar(data.index, data['Volume'], alpha=0.7, color='#627eea')
+        axes[1].set_title('Volume', fontsize=14)
+        axes[1].set_ylabel('Volume', fontsize=12)
+        axes[1].set_xlabel('Date', fontsize=12)
+        axes[1].grid(True, alpha=0.3)
+    
+    # Format dates for all subplots
+    for ax in axes:
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+        ax.xaxis.set_major_locator(mdates.MonthLocator())
+        plt.setp(ax.xaxis.get_majorticklabels(), rotation=45)
     
     plt.tight_layout()
     
