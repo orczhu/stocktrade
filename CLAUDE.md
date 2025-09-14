@@ -64,6 +64,61 @@ Then open http://localhost:5000 in your browser
 - `GET /api/price/{symbol}` - Current stock price (JSON)
 - `GET /api/stocks` - List of popular stock symbols (JSON)
 
+## 🌐 Public Deployment
+
+### Deployment Options
+
+#### **Option 1: Render (Recommended - Free)**
+1. **Push to GitHub**: Create a GitHub repository and push your code
+2. **Connect to Render**: 
+   - Go to [render.com](https://render.com) and sign up
+   - Click "New +" → "Web Service"
+   - Connect your GitHub repository
+   - Use these settings:
+     - **Build Command**: `pip install -r requirements.txt`
+     - **Start Command**: `gunicorn app:app`
+     - **Environment**: `Python 3`
+3. **Deploy**: Click "Create Web Service"
+4. **Access**: Your app will be available at `https://your-app-name.onrender.com`
+
+#### **Option 2: Railway**
+1. **Push to GitHub**: Create a repository with your code
+2. **Deploy on Railway**:
+   - Go to [railway.app](https://railway.app) and sign up
+   - Click "Deploy from GitHub"
+   - Select your repository
+   - Railway will auto-detect Python and deploy
+3. **Access**: Available at `https://your-app.up.railway.app`
+
+#### **Option 3: Heroku**
+1. **Install Heroku CLI**: Download from [heroku.com](https://heroku.com)
+2. **Create Heroku App**:
+   ```bash
+   heroku create your-stock-app-name
+   git push heroku main
+   ```
+3. **Access**: Available at `https://your-stock-app-name.herokuapp.com`
+
+### Deployment Files Created
+- `Procfile` - Tells deployment platform how to start the app
+- `render.yaml` - Render-specific configuration
+- `runtime.txt` - Specifies Python version
+- Updated `requirements.txt` - Added `gunicorn` for production server
+- Updated `app.py` - Production-ready with environment variables
+
+### Environment Variables (Production)
+- `PORT` - Automatically set by deployment platform
+- `FLASK_ENV=production` - Disables debug mode for security
+- `PYTHONPATH` - Ensures src/ directory is in Python path
+
+### Quick Deploy Steps (Render)
+1. Create GitHub repository and push this code
+2. Go to render.com → New Web Service → Connect GitHub
+3. Select repository → Use default settings
+4. Deploy → Access your public URL
+
+**Your stock chart service will be publicly accessible with a custom URL!**
+
 ## Development Guidelines
 
 ### Task Approach
