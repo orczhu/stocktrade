@@ -212,6 +212,33 @@
             </div>
         </div>
         
+        <!-- Stock Comparison -->
+        <div class="chart-section">
+            <h2>📈 Stock Comparison</h2>
+            <div class="input-group">
+                <label for="compare-symbols">Symbols (comma-separated):</label>
+                <input type="text" id="compare-symbols" placeholder="e.g., AAPL,GOOGL,MSFT" value="AAPL,GOOGL,MSFT,TSLA">
+                <select id="compare-period">
+                    <option value="1mo">1 Month</option>
+                    <option value="3mo" selected>3 Months</option>
+                    <option value="6mo">6 Months</option>
+                    <option value="1y">1 Year</option>
+                    <option value="2y">2 Years</option>
+                </select>
+                <button onclick="showComparisonChart()">Compare Stocks</button>
+            </div>
+            
+            <div class="chart-display" id="comparison-chart">
+                <p>Click "Compare Stocks" to display comparison chart</p>
+            </div>
+        </div>
+
+        <!-- Cryptocurrency Section Divider -->
+        <div style="margin: 40px 0; text-align: center;">
+            <h1 style="color: #f7931a; font-size: 2em; margin: 20px 0;">₿ CRYPTOCURRENCY CHARTS</h1>
+            <div style="height: 3px; background: linear-gradient(90deg, #f7931a 0%, #627eea 50%, #f7931a 100%); border-radius: 2px; width: 60%; margin: 0 auto;"></div>
+        </div>
+        
         <!-- Cryptocurrency Chart -->
         <div class="chart-section">
             <h2>₿ Cryptocurrency Chart</h2>
@@ -242,27 +269,6 @@
             
             <div class="chart-display" id="crypto-chart">
                 <p>Click "Show Crypto Chart" to display a cryptocurrency chart</p>
-            </div>
-        </div>
-
-        <!-- Stock Comparison -->
-        <div class="chart-section">
-            <h2>📈 Stock Comparison</h2>
-            <div class="input-group">
-                <label for="compare-symbols">Symbols (comma-separated):</label>
-                <input type="text" id="compare-symbols" placeholder="e.g., AAPL,GOOGL,MSFT" value="AAPL,GOOGL,MSFT,TSLA">
-                <select id="compare-period">
-                    <option value="1mo">1 Month</option>
-                    <option value="3mo" selected>3 Months</option>
-                    <option value="6mo">6 Months</option>
-                    <option value="1y">1 Year</option>
-                    <option value="2y">2 Years</option>
-                </select>
-                <button onclick="showComparisonChart()">Compare Stocks</button>
-            </div>
-            
-            <div class="chart-display" id="comparison-chart">
-                <p>Click "Compare Stocks" to display comparison chart</p>
             </div>
         </div>
         
