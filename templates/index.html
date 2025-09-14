@@ -157,7 +157,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>📈 Stock Chart Service</h1>
+        <h1>📈 Stock & Crypto Chart Service</h1>
         
         <!-- Individual Stock Chart -->
         <div class="chart-section">
@@ -212,6 +212,39 @@
             </div>
         </div>
         
+        <!-- Cryptocurrency Chart -->
+        <div class="chart-section">
+            <h2>₿ Cryptocurrency Chart</h2>
+            <div class="input-group">
+                <label for="crypto-symbol">Crypto Symbol:</label>
+                <input type="text" id="crypto-symbol" placeholder="e.g., BTC" value="BTC">
+                <select id="crypto-period">
+                    <option value="1mo">1 Month</option>
+                    <option value="3mo">3 Months</option>
+                    <option value="6mo">6 Months</option>
+                    <option value="1y" selected>1 Year</option>
+                    <option value="2y">2 Years</option>
+                </select>
+                <button onclick="showCryptoChart()">Show Crypto Chart</button>
+            </div>
+            
+            <div class="popular-stocks">
+                <strong>Popular cryptos:</strong>
+                <span class="stock-btn" onclick="setCrypto('BTC')">BTC</span>
+                <span class="stock-btn" onclick="setCrypto('ETH')">ETH</span>
+                <span class="stock-btn" onclick="setCrypto('ADA')">ADA</span>
+                <span class="stock-btn" onclick="setCrypto('DOT')">DOT</span>
+                <span class="stock-btn" onclick="setCrypto('LINK')">LINK</span>
+                <span class="stock-btn" onclick="setCrypto('SOL')">SOL</span>
+                <span class="stock-btn" onclick="setCrypto('DOGE')">DOGE</span>
+                <span class="stock-btn" onclick="setCrypto('LTC')">LTC</span>
+            </div>
+            
+            <div class="chart-display" id="crypto-chart">
+                <p>Click "Show Crypto Chart" to display a cryptocurrency chart</p>
+            </div>
+        </div>
+
         <!-- Stock Comparison -->
         <div class="chart-section">
             <h2>📈 Stock Comparison</h2>
@@ -233,6 +266,27 @@
             </div>
         </div>
         
+        <!-- Cryptocurrency Comparison -->
+        <div class="chart-section">
+            <h2>₿ Crypto Comparison</h2>
+            <div class="input-group">
+                <label for="crypto-compare-symbols">Crypto Symbols (comma-separated):</label>
+                <input type="text" id="crypto-compare-symbols" placeholder="e.g., BTC,ETH,ADA" value="BTC,ETH,ADA,DOT">
+                <select id="crypto-compare-period">
+                    <option value="1mo">1 Month</option>
+                    <option value="3mo">3 Months</option>
+                    <option value="6mo">6 Months</option>
+                    <option value="1y" selected>1 Year</option>
+                    <option value="2y">2 Years</option>
+                </select>
+                <button onclick="showCryptoComparisonChart()">Compare Cryptos</button>
+            </div>
+            
+            <div class="chart-display" id="crypto-comparison-chart">
+                <p>Click "Compare Cryptos" to display crypto comparison chart</p>
+            </div>
+        </div>
+        
         <!-- API Documentation -->
         <div class="api-section">
             <h2>🔌 API Endpoints</h2>
@@ -246,21 +300,39 @@
                 </div>
                 
                 <div class="endpoint">
+                    <strong>Crypto Chart</strong>
+                    <code>GET /crypto/{symbol}?period={period}</code>
+                    <small>Returns PNG image of crypto chart</small>
+                </div>
+                
+                <div class="endpoint">
                     <strong>VIX Chart</strong>
                     <code>GET /vix?period={period}</code>
                     <small>Returns PNG image of VIX chart</small>
                 </div>
                 
                 <div class="endpoint">
-                    <strong>Comparison Chart</strong>
+                    <strong>Stock Comparison</strong>
                     <code>GET /compare?symbols={symbols}&period={period}</code>
-                    <small>Returns PNG image of comparison chart</small>
+                    <small>Returns PNG image of stock comparison</small>
                 </div>
                 
                 <div class="endpoint">
-                    <strong>Current Price</strong>
+                    <strong>Crypto Comparison</strong>
+                    <code>GET /crypto-compare?symbols={symbols}&period={period}</code>
+                    <small>Returns PNG image of crypto comparison</small>
+                </div>
+                
+                <div class="endpoint">
+                    <strong>Stock Price</strong>
                     <code>GET /api/price/{symbol}</code>
                     <small>Returns JSON with current stock price</small>
+                </div>
+                
+                <div class="endpoint">
+                    <strong>Crypto Price</strong>
+                    <code>GET /api/crypto/{symbol}</code>
+                    <small>Returns JSON with current crypto price</small>
                 </div>
             </div>
         </div>
@@ -269,6 +341,10 @@
     <script>
         function setStock(symbol) {
             document.getElementById('stock-symbol').value = symbol;
+        }
+        
+        function setCrypto(symbol) {
+            document.getElementById('crypto-symbol').value = symbol;
         }
         
         function showStockChart() {
@@ -329,6 +405,50 @@
                 chartDiv.innerHTML = `<p style="color: #ff6b6b;">Error loading comparison chart</p>`;
             };
             img.src = `/compare?symbols=${symbols}&period=${period}`;
+        }
+        
+        function showCryptoChart() {
+            const symbol = document.getElementById('crypto-symbol').value.toUpperCase();
+            const period = document.getElementById('crypto-period').value;
+            
+            if (!symbol) {
+                alert('Please enter a crypto symbol');
+                return;
+            }
+            
+            const chartDiv = document.getElementById('crypto-chart');
+            chartDiv.innerHTML = '<div class="loading">Loading crypto chart...</div>';
+            
+            const img = new Image();
+            img.onload = function() {
+                chartDiv.innerHTML = `<img src="/crypto/${symbol}?period=${period}" alt="${symbol} Chart">`;
+            };
+            img.onerror = function() {
+                chartDiv.innerHTML = `<p style="color: #ff6b6b;">Error loading chart for ${symbol}</p>`;
+            };
+            img.src = `/crypto/${symbol}?period=${period}`;
+        }
+        
+        function showCryptoComparisonChart() {
+            const symbols = document.getElementById('crypto-compare-symbols').value;
+            const period = document.getElementById('crypto-compare-period').value;
+            
+            if (!symbols) {
+                alert('Please enter crypto symbols');
+                return;
+            }
+            
+            const chartDiv = document.getElementById('crypto-comparison-chart');
+            chartDiv.innerHTML = '<div class="loading">Loading crypto comparison chart...</div>';
+            
+            const img = new Image();
+            img.onload = function() {
+                chartDiv.innerHTML = `<img src="/crypto-compare?symbols=${symbols}&period=${period}" alt="Crypto Comparison Chart">`;
+            };
+            img.onerror = function() {
+                chartDiv.innerHTML = `<p style="color: #ff6b6b;">Error loading crypto comparison chart</p>`;
+            };
+            img.src = `/crypto-compare?symbols=${symbols}&period=${period}`;
         }
         
         // Load AAPL chart by default

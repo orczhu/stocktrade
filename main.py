@@ -75,11 +75,50 @@ def main():
     print("Creating stock comparison chart...")
     fetcher.create_comparison_chart(stocks, "3mo")
     
+    print("\n" + "=" * 40)
+    
+    # Cryptocurrency functionality
+    print("\nCryptocurrency Data:")
+    print("-" * 25)
+    
+    # Popular cryptocurrencies
+    cryptos = ["BTC", "ETH", "ADA", "DOT"]
+    
+    print("Current Crypto Prices:")
+    print("-" * 25)
+    for crypto in cryptos:
+        price = fetcher.get_crypto_current_price(crypto)
+        if price:
+            if price < 1:
+                print(f"{crypto}/USD: ${price:.4f}")
+            elif price < 100:
+                print(f"{crypto}/USD: ${price:.2f}")
+            else:
+                print(f"{crypto}/USD: ${price:,.2f}")
+        else:
+            print(f"{crypto}/USD: Unable to fetch price")
+    
+    print("\n" + "=" * 40)
+    
+    # Generate crypto charts
+    print("\nGenerating Crypto Charts:")
+    print("-" * 30)
+    
+    # Individual crypto chart
+    print("Creating BTC price chart...")
+    fetcher.create_crypto_chart("BTC", "1y")
+    
+    # Crypto comparison chart
+    print("Creating crypto comparison chart...")
+    fetcher.create_crypto_comparison_chart(cryptos, "1y")
+    
     print("\nAll charts saved to 'data/' directory!")
     print("Chart files created:")
     print("- data/AAPL_chart_3mo.png")
     print("- data/VIX_chart_3mo.png") 
     print("- data/comparison_AAPL_GOOGL_MSFT_TSLA_SPY_3mo.png")
+    print("- data/BTC_chart_1y.png")
+    print("- data/crypto_comparison_BTC_ETH_ADA_DOT_1y.png")
 
 if __name__ == "__main__":
     main()
