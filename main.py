@@ -56,6 +56,30 @@ def main():
         print(aapl_data[['Open', 'High', 'Low', 'Close', 'Volume']].round(2))
     else:
         print("Unable to fetch AAPL data")
+    
+    print("\n" + "=" * 40)
+    
+    # Generate charts
+    print("\nGenerating Charts:")
+    print("-" * 20)
+    
+    # Individual stock chart
+    print("Creating AAPL price chart...")
+    fetcher.create_price_chart("AAPL", "3mo")
+    
+    # VIX chart
+    print("Creating VIX fear index chart...")
+    fetcher.create_vix_chart("3mo")
+    
+    # Comparison chart
+    print("Creating stock comparison chart...")
+    fetcher.create_comparison_chart(stocks, "3mo")
+    
+    print("\nAll charts saved to 'data/' directory!")
+    print("Chart files created:")
+    print("- data/AAPL_chart_3mo.png")
+    print("- data/VIX_chart_3mo.png") 
+    print("- data/comparison_AAPL_GOOGL_MSFT_TSLA_SPY_3mo.png")
 
 if __name__ == "__main__":
     main()

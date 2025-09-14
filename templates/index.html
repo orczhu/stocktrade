@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Chart Service</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .chart-section {
+            background: rgba(255, 255, 255, 0.1);
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .chart-section h2 {
+            margin-top: 0;
+            color: #fff;
+            font-size: 1.5em;
+        }
+        
+        .input-group {
+            margin: 15px 0;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        input, select, button {
+            padding: 10px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        input, select {
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+        }
+        
+        button {
+            background: #4CAF50;
+            color: white;
+            cursor: pointer;
+            padding: 12px 20px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background: #45a049;
+        }
+        
+        .chart-display {
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        .chart-display img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            background: white;
+            padding: 10px;
+        }
+        
+        .loading {
+            display: none;
+            color: #fff;
+            font-style: italic;
+        }
+        
+        .popular-stocks {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .stock-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 8px 15px;
+            cursor: pointer;
+            border-radius: 20px;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+        
+        .stock-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        .api-section {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        
+        .api-endpoints {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .endpoint {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #4CAF50;
+        }
+        
+        .endpoint code {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 5px 8px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            display: block;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📈 Stock Chart Service</h1>
+        
+        <!-- Individual Stock Chart -->
+        <div class="chart-section">
+            <h2>📊 Individual Stock Chart</h2>
+            <div class="input-group">
+                <label for="stock-symbol">Stock Symbol:</label>
+                <input type="text" id="stock-symbol" placeholder="e.g., AAPL" value="AAPL">
+                <select id="stock-period">
+                    <option value="5d">5 Days</option>
+                    <option value="1mo">1 Month</option>
+                    <option value="3mo" selected>3 Months</option>
+                    <option value="6mo">6 Months</option>
+                    <option value="1y">1 Year</option>
+                    <option value="2y">2 Years</option>
+                </select>
+                <button onclick="showStockChart()">Show Chart</button>
+            </div>
+            
+            <div class="popular-stocks">
+                <strong>Popular stocks:</strong>
+                <span class="stock-btn" onclick="setStock('AAPL')">AAPL</span>
+                <span class="stock-btn" onclick="setStock('GOOGL')">GOOGL</span>
+                <span class="stock-btn" onclick="setStock('MSFT')">MSFT</span>
+                <span class="stock-btn" onclick="setStock('TSLA')">TSLA</span>
+                <span class="stock-btn" onclick="setStock('AMZN')">AMZN</span>
+                <span class="stock-btn" onclick="setStock('META')">META</span>
+                <span class="stock-btn" onclick="setStock('NVDA')">NVDA</span>
+                <span class="stock-btn" onclick="setStock('SPY')">SPY</span>
+            </div>
+            
+            <div class="chart-display" id="stock-chart">
+                <p>Click "Show Chart" to display a stock chart</p>
+            </div>
+        </div>
+        
+        <!-- VIX Fear Index -->
+        <div class="chart-section">
+            <h2>😨 VIX Fear Index</h2>
+            <div class="input-group">
+                <select id="vix-period">
+                    <option value="1mo">1 Month</option>
+                    <option value="3mo" selected>3 Months</option>
+                    <option value="6mo">6 Months</option>
+                    <option value="1y">1 Year</option>
+                    <option value="2y">2 Years</option>
+                </select>
+                <button onclick="showVixChart()">Show VIX Chart</button>
+            </div>
+            
+            <div class="chart-display" id="vix-chart">
+                <p>Click "Show VIX Chart" to display the fear index</p>
+            </div>
+        </div>
+        
+        <!-- Stock Comparison -->
+        <div class="chart-section">
+            <h2>📈 Stock Comparison</h2>
+            <div class="input-group">
+                <label for="compare-symbols">Symbols (comma-separated):</label>
+                <input type="text" id="compare-symbols" placeholder="e.g., AAPL,GOOGL,MSFT" value="AAPL,GOOGL,MSFT,TSLA">
+                <select id="compare-period">
+                    <option value="1mo">1 Month</option>
+                    <option value="3mo" selected>3 Months</option>
+                    <option value="6mo">6 Months</option>
+                    <option value="1y">1 Year</option>
+                    <option value="2y">2 Years</option>
+                </select>
+                <button onclick="showComparisonChart()">Compare Stocks</button>
+            </div>
+            
+            <div class="chart-display" id="comparison-chart">
+                <p>Click "Compare Stocks" to display comparison chart</p>
+            </div>
+        </div>
+        
+        <!-- API Documentation -->
+        <div class="api-section">
+            <h2>🔌 API Endpoints</h2>
+            <p>You can also access charts and data programmatically:</p>
+            
+            <div class="api-endpoints">
+                <div class="endpoint">
+                    <strong>Stock Chart</strong>
+                    <code>GET /chart/{symbol}?period={period}</code>
+                    <small>Returns PNG image of stock chart</small>
+                </div>
+                
+                <div class="endpoint">
+                    <strong>VIX Chart</strong>
+                    <code>GET /vix?period={period}</code>
+                    <small>Returns PNG image of VIX chart</small>
+                </div>
+                
+                <div class="endpoint">
+                    <strong>Comparison Chart</strong>
+                    <code>GET /compare?symbols={symbols}&period={period}</code>
+                    <small>Returns PNG image of comparison chart</small>
+                </div>
+                
+                <div class="endpoint">
+                    <strong>Current Price</strong>
+                    <code>GET /api/price/{symbol}</code>
+                    <small>Returns JSON with current stock price</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function setStock(symbol) {
+            document.getElementById('stock-symbol').value = symbol;
+        }
+        
+        function showStockChart() {
+            const symbol = document.getElementById('stock-symbol').value.toUpperCase();
+            const period = document.getElementById('stock-period').value;
+            
+            if (!symbol) {
+                alert('Please enter a stock symbol');
+                return;
+            }
+            
+            const chartDiv = document.getElementById('stock-chart');
+            chartDiv.innerHTML = '<div class="loading">Loading chart...</div>';
+            
+            const img = new Image();
+            img.onload = function() {
+                chartDiv.innerHTML = `<img src="/chart/${symbol}?period=${period}" alt="${symbol} Chart">`;
+            };
+            img.onerror = function() {
+                chartDiv.innerHTML = `<p style="color: #ff6b6b;">Error loading chart for ${symbol}</p>`;
+            };
+            img.src = `/chart/${symbol}?period=${period}`;
+        }
+        
+        function showVixChart() {
+            const period = document.getElementById('vix-period').value;
+            
+            const chartDiv = document.getElementById('vix-chart');
+            chartDiv.innerHTML = '<div class="loading">Loading VIX chart...</div>';
+            
+            const img = new Image();
+            img.onload = function() {
+                chartDiv.innerHTML = `<img src="/vix?period=${period}" alt="VIX Chart">`;
+            };
+            img.onerror = function() {
+                chartDiv.innerHTML = `<p style="color: #ff6b6b;">Error loading VIX chart</p>`;
+            };
+            img.src = `/vix?period=${period}`;
+        }
+        
+        function showComparisonChart() {
+            const symbols = document.getElementById('compare-symbols').value;
+            const period = document.getElementById('compare-period').value;
+            
+            if (!symbols) {
+                alert('Please enter stock symbols');
+                return;
+            }
+            
+            const chartDiv = document.getElementById('comparison-chart');
+            chartDiv.innerHTML = '<div class="loading">Loading comparison chart...</div>';
+            
+            const img = new Image();
+            img.onload = function() {
+                chartDiv.innerHTML = `<img src="/compare?symbols=${symbols}&period=${period}" alt="Comparison Chart">`;
+            };
+            img.onerror = function() {
+                chartDiv.innerHTML = `<p style="color: #ff6b6b;">Error loading comparison chart</p>`;
+            };
+            img.src = `/compare?symbols=${symbols}&period=${period}`;
+        }
+        
+        // Load AAPL chart by default
+        window.addEventListener('load', function() {
+            setTimeout(showStockChart, 1000);
+        });
+    </script>
+</body>
+</html>
