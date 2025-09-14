@@ -104,9 +104,9 @@ def main():
     print("\nGenerating Crypto Charts:")
     print("-" * 30)
     
-    # Individual crypto chart
-    print("Creating BTC price chart...")
-    fetcher.create_crypto_chart("BTC", "1y")
+    # Individual crypto chart with buy/sell analysis
+    print("Creating BTC price chart with buy/sell volume analysis...")
+    fetcher.create_crypto_chart_with_buysell("BTC", "1y")
     
     # Crypto comparison chart
     print("Creating crypto comparison chart...")
@@ -117,7 +117,7 @@ def main():
     print("- data/AAPL_chart_3mo.png")
     print("- data/VIX_chart_3mo.png") 
     print("- data/comparison_AAPL_GOOGL_MSFT_TSLA_SPY_3mo.png")
-    print("- data/BTC_chart_1y.png")
+    print("- data/BTC_chart_1y_buysell.png (with buy/sell analysis)")
     print("- data/crypto_comparison_BTC_ETH_ADA_DOT_1y.png")
 
 if __name__ == "__main__":
