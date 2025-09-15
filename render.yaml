@@ -3,8 +3,12 @@ services:
     name: stock-chart-service
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app
+    startCommand: python app.py
     envVars:
+      - key: EMAIL
+        value: wangzhuyunabc@gmail.com
+      - key: APP_KEY
+        sync: false  # Set this in Render dashboard for security
       - key: FLASK_ENV
         value: production
       - key: PYTHONPATH

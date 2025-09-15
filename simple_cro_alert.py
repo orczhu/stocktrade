@@ -10,10 +10,18 @@ import time
 import threading
 import smtplib
 import email.message
+import logging
 from datetime import datetime
 
 sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 from src.stock_fetcher import StockFetcher
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 class SimpleCROAlert:
     """Simple CRO price monitor - no database, just email when target hit."""
@@ -58,11 +66,11 @@ Happy trading! 🚀
                 server.login(self.email_address, self.email_password)
                 server.send_message(msg)
             
-            print(f"✅ CRO Alert email sent! ${current_price:.4f}")
+            logger.info(f"✅ CRO Alert email sent! ${current_price:.4f}")
             return True
             
         except Exception as e:
-            print(f"❌ Failed to send email: {e}")
+            logger.error(f"❌ Failed to send email: {e}")
             return False
     
     def check_cro_price(self) -> bool:
@@ -71,14 +79,14 @@ Happy trading! 🚀
             current_price = self.fetcher.get_crypto_current_price("CRO")
             
             if current_price is None:
-                print("⚠️  Could not fetch CRO price")
+                logger.warning("⚠️  Could not fetch CRO price")
                 return False
             
-            print(f"📊 CRO: ${current_price:.4f} (target: ${self.target_price:.2f})")
+            logger.info(f"📊 CRO: ${current_price:.4f} (target: ${self.target_price:.2f})")
             
             # Check if target reached and we haven't sent alert yet
             if current_price >= self.target_price and not self.alert_sent:
-                print(f"🎯 TARGET HIT! CRO reached ${current_price:.4f}")
+                logger.info(f"🎯 TARGET HIT! CRO reached ${current_price:.4f}")
                 
                 if self.send_alert_email(current_price):
                     self.alert_sent = True
@@ -87,31 +95,31 @@ Happy trading! 🚀
             return False
             
         except Exception as e:
-            print(f"❌ Error checking CRO price: {e}")
+            logger.error(f"❌ Error checking CRO price: {e}")
             return False
     
     def start_monitoring(self, interval_minutes: int = 2):
         """Start monitoring CRO price."""
         def monitor_loop():
-            print(f"🔍 Starting CRO monitoring (checking every {interval_minutes} minutes)")
-            print(f"🎯 Will alert when CRO >= ${self.target_price:.2f}")
+            logger.info(f"🔍 Starting CRO monitoring (checking every {interval_minutes} minutes)")
+            logger.info(f"🎯 Will alert when CRO >= ${self.target_price:.2f}")
             
             while self.monitoring and not self.alert_sent:
                 try:
                     self.check_cro_price()
                     
                     if self.alert_sent:
-                        print("✅ Alert sent! Monitoring stopped.")
+                        logger.info("✅ Alert sent! Monitoring stopped.")
                         break
                         
                     # Wait for next check
                     time.sleep(interval_minutes * 60)
                     
                 except Exception as e:
-                    print(f"❌ Monitoring error: {e}")
+                    logger.error(f"❌ Monitoring error: {e}")
                     time.sleep(60)  # Wait 1 minute before retrying
             
-            print("🛑 CRO monitoring stopped")
+            logger.info("🛑 CRO monitoring stopped")
         
         self.monitoring = True
         monitor_thread = threading.Thread(target=monitor_loop, daemon=True)

@@ -15,6 +15,8 @@ from simple_cro_alert import SimpleCROAlert
 from datetime import datetime
 import io
 import base64
+import logging
+import sys
 import matplotlib
 matplotlib.use('Agg')  # Use non-interactive backend
 import matplotlib.pyplot as plt
@@ -534,17 +536,37 @@ def keep_alive():
     })
 
 if __name__ == '__main__':
-    # Start CRO alert monitoring
-    print("🎯 Starting CRO alert monitoring (target: $0.26)")
-    cro_alert.start_monitoring(interval_minutes=2)
+    # Configure logging for web service
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.StreamHandler(sys.stdout)  # Ensure logs go to stdout for Render
+        ]
+    )
+    logger = logging.getLogger(__name__)
     
+    # Log configuration status at startup
+    logger.info("🚀 CRO Alert System Starting...")
+    logger.info(f"📧 Email: {cro_alert.email_address}")
+    if cro_alert.email_password:
+        logger.info("✅ APP_KEY is configured - Email notifications enabled")
+    else:
+        logger.warning("❌ APP_KEY is missing - Email notifications disabled")
+    logger.info(f"🎯 Target Price: ${cro_alert.target_price:.2f}")
+    
+    # Start CRO alert monitoring
+    logger.info("🔍 Starting CRO alert monitoring...")
+    cro_alert.start_monitoring(interval_minutes=2)
+
     # Get port from environment variable for deployment
     port = int(os.environ.get('PORT', 5000))
     debug_mode = os.environ.get('FLASK_ENV') == 'development'
     
     try:
+        logger.info(f"🌐 Starting Flask web service on port {port}")
         app.run(debug=debug_mode, host='0.0.0.0', port=port)
     except KeyboardInterrupt:
-        print("\nShutting down...")
+        logger.info("⛔ Shutting down...")
         cro_alert.stop_monitoring()
-        print("CRO alert monitoring stopped.")
+        logger.info("🛑 CRO alert monitoring stopped.")
