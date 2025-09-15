@@ -123,6 +123,12 @@ gunicorn app:app
 - Mark tasks as completed immediately after finishing
 - Create follow-up tasks as they are discovered during implementation
 
+### Implementation Process
+- **ALWAYS discuss your approach with the user first before implementing**
+- Present your planned solution, files to create/modify, and overall design
+- Wait for user agreement before proceeding with implementation
+- Only implement after getting explicit approval from the user
+
 ### Code Architecture Notes
 - `StockFetcher` class is the main data layer - extend here for new data sources
 - Chart methods return boolean success/failure - maintain this pattern for new chart types

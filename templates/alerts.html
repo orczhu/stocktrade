@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Price Alerts - Stock Chart Service</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+        }
+        .nav {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .nav a {
+            margin: 0 15px;
+            text-decoration: none;
+            color: #007bff;
+            font-weight: bold;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button.danger {
+            background-color: #dc3545;
+        }
+        button.danger:hover {
+            background-color: #c82333;
+        }
+        button.success {
+            background-color: #28a745;
+        }
+        button.success:hover {
+            background-color: #218838;
+        }
+        .alert-item {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 15px;
+            background: #f9f9f9;
+        }
+        .alert-item.active {
+            border-left: 4px solid #28a745;
+        }
+        .alert-item.triggered {
+            border-left: 4px solid #ffc107;
+            background: #fff8e1;
+        }
+        .alert-item.inactive {
+            border-left: 4px solid #dc3545;
+            background: #ffeaea;
+        }
+        .alert-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .alert-symbol {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+        .alert-status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .status-active { background: #d4edda; color: #155724; }
+        .status-triggered { background: #fff3cd; color: #856404; }
+        .status-inactive { background: #f8d7da; color: #721c24; }
+        .alert-details {
+            color: #666;
+            margin-bottom: 10px;
+        }
+        .alert-actions {
+            text-align: right;
+        }
+        .message {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .stat-label {
+            color: #666;
+            margin-top: 5px;
+        }
+        .crypto-badge {
+            background: #f7931a;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+        }
+        .stock-badge {
+            background: #007bff;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+        }
+        .monitoring-status {
+            text-align: center;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        .monitoring-active {
+            background: #d4edda;
+            color: #155724;
+        }
+        .monitoring-inactive {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📊 Price Alerts</h1>
+        <p>Set up notifications for when stock or crypto prices hit your target levels</p>
+    </div>
+
+    <div class="nav">
+        <a href="/">← Back to Charts</a>
+        <a href="/alerts">Alerts</a>
+    </div>
+
+    <div id="monitoring-status" class="monitoring-status monitoring-inactive">
+        🔄 Monitoring Status: Checking...
+    </div>
+
+    <!-- Statistics -->
+    <div class="stats" id="stats">
+        <!-- Stats will be loaded here -->
+    </div>
+
+    <!-- Create Alert Form -->
+    <div class="container">
+        <h2>🔔 Create New Alert</h2>
+        <form id="alert-form">
+            <div class="form-group">
+                <label for="symbol">Symbol:</label>
+                <input type="text" id="symbol" placeholder="e.g., CRO, BTC, AAPL" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="asset_type">Asset Type:</label>
+                <select id="asset_type" required>
+                    <option value="crypto">Cryptocurrency</option>
+                    <option value="stock">Stock</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="alert_type">Alert Type:</label>
+                <select id="alert_type" required>
+                    <option value="above">Notify when price goes ABOVE target</option>
+                    <option value="below">Notify when price goes BELOW target</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="target_price">Target Price ($):</label>
+                <input type="number" id="target_price" step="0.0001" placeholder="0.00" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" id="email" value="wangzhuyunabc@gmail.com" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="message">Custom Message (Optional):</label>
+                <textarea id="message" rows="3" placeholder="Optional message to include in the alert"></textarea>
+            </div>
+            
+            <button type="submit">Create Alert</button>
+        </form>
+    </div>
+
+    <!-- Alerts List -->
+    <div class="container">
+        <h2>📋 Your Alerts</h2>
+        <div id="alerts-list">
+            <p>Loading alerts...</p>
+        </div>
+    </div>
+
+    <!-- Message Display -->
+    <div id="message-container"></div>
+
+    <script>
+        let alerts = [];
+        let stats = {};
+        
+        // Load alerts and stats on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAlerts();
+            loadStats();
+            checkMonitoringStatus();
+            
+            // Refresh every 30 seconds
+            setInterval(() => {
+                loadAlerts();
+                loadStats();
+                checkMonitoringStatus();
+            }, 30000);
+        });
+
+        // Form submission
+        document.getElementById('alert-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                symbol: document.getElementById('symbol').value.toUpperCase(),
+                asset_type: document.getElementById('asset_type').value,
+                alert_type: document.getElementById('alert_type').value,
+                target_price: parseFloat(document.getElementById('target_price').value),
+                email: document.getElementById('email').value,
+                message: document.getElementById('message').value
+            };
+            
+            try {
+                const response = await fetch('/api/alerts', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showMessage('Alert created successfully!', 'success');
+                    document.getElementById('alert-form').reset();
+                    // Restore default values
+                    document.getElementById('email').value = 'wangzhuyunabc@gmail.com';
+                    loadAlerts();
+                    loadStats();
+                } else {
+                    showMessage(result.error || 'Failed to create alert', 'error');
+                }
+            } catch (error) {
+                showMessage('Error creating alert: ' + error.message, 'error');
+            }
+        });
+
+        async function loadAlerts() {
+            try {
+                const response = await fetch('/api/alerts?email=wangzhuyunabc@gmail.com');
+                const result = await response.json();
+                
+                if (result.success) {
+                    alerts = result.alerts;
+                    displayAlerts();
+                } else {
+                    showMessage('Failed to load alerts: ' + result.error, 'error');
+                }
+            } catch (error) {
+                showMessage('Error loading alerts: ' + error.message, 'error');
+            }
+        }
+
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/alerts/stats');
+                const result = await response.json();
+                
+                if (result.success) {
+                    stats = result.statistics;
+                    displayStats();
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        async function checkMonitoringStatus() {
+            const statusEl = document.getElementById('monitoring-status');
+            try {
+                // Try to get stats as a way to check if monitoring is working
+                const response = await fetch('/api/alerts/stats');
+                if (response.ok) {
+                    statusEl.textContent = '✅ Monitoring Active (checking every 5 minutes)';
+                    statusEl.className = 'monitoring-status monitoring-active';
+                } else {
+                    statusEl.textContent = '❌ Monitoring Status Unknown';
+                    statusEl.className = 'monitoring-status monitoring-inactive';
+                }
+            } catch (error) {
+                statusEl.textContent = '❌ Monitoring Offline';
+                statusEl.className = 'monitoring-status monitoring-inactive';
+            }
+        }
+
+        function displayStats() {
+            const container = document.getElementById('stats');
+            container.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-number">${stats.total_alerts || 0}</div>
+                    <div class="stat-label">Total Alerts</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${stats.active_alerts || 0}</div>
+                    <div class="stat-label">Active Alerts</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${stats.triggered_alerts || 0}</div>
+                    <div class="stat-label">Triggered Alerts</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${stats.recent_alerts || 0}</div>
+                    <div class="stat-label">This Week</div>
+                </div>
+            `;
+        }
+
+        function displayAlerts() {
+            const container = document.getElementById('alerts-list');
+            
+            if (alerts.length === 0) {
+                container.innerHTML = '<p>No alerts created yet. Create your first alert above!</p>';
+                return;
+            }
+            
+            const alertsHtml = alerts.map(alert => {
+                const statusClass = alert.triggered_at ? 'triggered' : (alert.is_active ? 'active' : 'inactive');
+                const statusText = alert.triggered_at ? 'triggered' : (alert.is_active ? 'active' : 'inactive');
+                const assetBadge = alert.asset_type === 'crypto' ? 'crypto-badge' : 'stock-badge';
+                
+                return `
+                    <div class="alert-item ${statusClass}">
+                        <div class="alert-header">
+                            <div class="alert-symbol">
+                                ${alert.symbol} 
+                                <span class="${assetBadge}">${alert.asset_type.toUpperCase()}</span>
+                            </div>
+                            <div class="alert-status status-${statusText}">${statusText}</div>
+                        </div>
+                        <div class="alert-details">
+                            <strong>${alert.alert_type.toUpperCase()}</strong> $${alert.target_price} 
+                            <br>
+                            📧 ${alert.email}
+                            <br>
+                            📅 Created: ${new Date(alert.created_at).toLocaleString()}
+                            ${alert.triggered_at ? '<br>🔔 Triggered: ' + new Date(alert.triggered_at).toLocaleString() : ''}
+                            ${alert.message ? '<br>💬 ' + alert.message : ''}
+                        </div>
+                        <div class="alert-actions">
+                            ${alert.is_active ? `
+                                <button onclick="checkAlert(${alert.id})" class="success">Check Now</button>
+                                <button onclick="toggleAlert(${alert.id}, false)">Deactivate</button>
+                            ` : `
+                                <button onclick="toggleAlert(${alert.id}, true)">Reactivate</button>
+                            `}
+                            <button onclick="deleteAlert(${alert.id})" class="danger">Delete</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            container.innerHTML = alertsHtml;
+        }
+
+        async function deleteAlert(alertId) {
+            if (!confirm('Are you sure you want to delete this alert?')) return;
+            
+            try {
+                const response = await fetch(`/api/alerts/${alertId}`, {
+                    method: 'DELETE'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showMessage('Alert deleted successfully!', 'success');
+                    loadAlerts();
+                    loadStats();
+                } else {
+                    showMessage(result.error || 'Failed to delete alert', 'error');
+                }
+            } catch (error) {
+                showMessage('Error deleting alert: ' + error.message, 'error');
+            }
+        }
+
+        async function toggleAlert(alertId, activate) {
+            try {
+                const response = await fetch(`/api/alerts/${alertId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ is_active: activate })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showMessage(`Alert ${activate ? 'activated' : 'deactivated'} successfully!`, 'success');
+                    loadAlerts();
+                    loadStats();
+                } else {
+                    showMessage(result.error || 'Failed to update alert', 'error');
+                }
+            } catch (error) {
+                showMessage('Error updating alert: ' + error.message, 'error');
+            }
+        }
+
+        async function checkAlert(alertId) {
+            try {
+                const response = await fetch(`/api/alerts/check/${alertId}`, {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showMessage(result.message, result.triggered ? 'success' : 'error');
+                    if (result.triggered) {
+                        loadAlerts();
+                        loadStats();
+                    }
+                } else {
+                    showMessage(result.error || 'Failed to check alert', 'error');
+                }
+            } catch (error) {
+                showMessage('Error checking alert: ' + error.message, 'error');
+            }
+        }
+
+        function showMessage(text, type) {
+            const container = document.getElementById('message-container');
+            const messageEl = document.createElement('div');
+            messageEl.className = `message ${type}`;
+            messageEl.textContent = text;
+            
+            container.appendChild(messageEl);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (messageEl.parentNode) {
+                    messageEl.parentNode.removeChild(messageEl);
+                }
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

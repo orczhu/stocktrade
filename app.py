@@ -10,6 +10,9 @@ sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 
 from flask import Flask, render_template, request, send_file, jsonify
 from stock_fetcher import StockFetcher
+from alert_manager import AlertManager, PriceAlert
+from simple_cro_alert import SimpleCROAlert
+from datetime import datetime
 import io
 import base64
 import matplotlib
@@ -19,11 +22,18 @@ import matplotlib.dates as mdates
 
 app = Flask(__name__)
 fetcher = StockFetcher()
+alert_manager = AlertManager()
+cro_alert = SimpleCROAlert()
 
 @app.route('/')
 def index():
     """Home page with chart options."""
     return render_template('index.html')
+
+@app.route('/alerts')
+def alerts_page():
+    """Price alerts management page."""
+    return render_template('alerts.html')
 
 @app.route('/chart/<symbol>')
 def stock_chart(symbol):
@@ -317,11 +327,224 @@ def get_crypto_price(symbol):
 @app.route('/api/cryptos')
 def get_crypto_list():
     """API endpoint to get popular cryptocurrency symbols."""
-    popular_cryptos = ["BTC", "ETH", "ADA", "DOT", "LINK", "SOL", "DOGE", "LTC", "XRP", "BNB"]
+    popular_cryptos = ["BTC", "ETH", "ADA", "DOT", "LINK", "SOL", "DOGE", "LTC", "XRP", "BNB", "CRO"]
     return jsonify({'cryptos': popular_cryptos})
 
+# Price Alert API Endpoints
+
+@app.route('/api/alerts', methods=['POST'])
+def create_alert():
+    """Create a new price alert."""
+    try:
+        data = request.get_json()
+        
+        # Validate required fields
+        required_fields = ['symbol', 'target_price', 'alert_type', 'email']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({'error': f'Missing required field: {field}'}), 400
+        
+        # Create alert object
+        alert = PriceAlert(
+            symbol=data['symbol'].upper(),
+            asset_type=data.get('asset_type', 'stock'),
+            alert_type=data['alert_type'],
+            target_price=float(data['target_price']),
+            email=data['email'],
+            phone=data.get('phone'),
+            message=data.get('message', '')
+        )
+        
+        # Validate alert_type
+        if alert.alert_type not in ['above', 'below']:
+            return jsonify({'error': 'alert_type must be "above" or "below"'}), 400
+        
+        # Validate asset_type
+        if alert.asset_type not in ['stock', 'crypto']:
+            return jsonify({'error': 'asset_type must be "stock" or "crypto"'}), 400
+        
+        # Create the alert
+        alert_id = alert_manager.create_alert(alert)
+        
+        return jsonify({
+            'success': True,
+            'alert_id': alert_id,
+            'message': f'Alert created for {alert.symbol} at ${alert.target_price}'
+        }), 201
+        
+    except ValueError as e:
+        return jsonify({'error': f'Invalid target_price: {str(e)}'}), 400
+    except Exception as e:
+        return jsonify({'error': f'Failed to create alert: {str(e)}'}), 500
+
+@app.route('/api/alerts', methods=['GET'])
+def get_alerts():
+    """Get alerts for a specific email."""
+    email = request.args.get('email')
+    active_only = request.args.get('active_only', 'false').lower() == 'true'
+    
+    try:
+        alerts = alert_manager.get_alerts(email=email, active_only=active_only)
+        
+        # Convert alerts to JSON-serializable format
+        alerts_data = []
+        for alert in alerts:
+            alerts_data.append({
+                'id': alert.id,
+                'symbol': alert.symbol,
+                'asset_type': alert.asset_type,
+                'alert_type': alert.alert_type,
+                'target_price': alert.target_price,
+                'email': alert.email,
+                'phone': alert.phone,
+                'is_active': alert.is_active,
+                'created_at': alert.created_at,
+                'triggered_at': alert.triggered_at,
+                'message': alert.message
+            })
+        
+        return jsonify({
+            'success': True,
+            'alerts': alerts_data,
+            'count': len(alerts_data)
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'Failed to get alerts: {str(e)}'}), 500
+
+@app.route('/api/alerts/<int:alert_id>', methods=['DELETE'])
+def delete_alert(alert_id):
+    """Delete a specific alert."""
+    try:
+        success = alert_manager.delete_alert(alert_id)
+        if success:
+            return jsonify({
+                'success': True,
+                'message': f'Alert {alert_id} deleted successfully'
+            })
+        else:
+            return jsonify({'error': 'Alert not found'}), 404
+            
+    except Exception as e:
+        return jsonify({'error': f'Failed to delete alert: {str(e)}'}), 500
+
+@app.route('/api/alerts/<int:alert_id>', methods=['PUT'])
+def update_alert(alert_id):
+    """Update a specific alert."""
+    try:
+        data = request.get_json()
+        
+        # Remove fields that shouldn't be updated via API
+        allowed_fields = ['target_price', 'alert_type', 'is_active', 'message', 'phone']
+        update_data = {k: v for k, v in data.items() if k in allowed_fields}
+        
+        if not update_data:
+            return jsonify({'error': 'No valid fields to update'}), 400
+        
+        # Validate types
+        if 'target_price' in update_data:
+            update_data['target_price'] = float(update_data['target_price'])
+        
+        if 'alert_type' in update_data and update_data['alert_type'] not in ['above', 'below']:
+            return jsonify({'error': 'alert_type must be "above" or "below"'}), 400
+        
+        success = alert_manager.update_alert(alert_id, **update_data)
+        if success:
+            return jsonify({
+                'success': True,
+                'message': f'Alert {alert_id} updated successfully'
+            })
+        else:
+            return jsonify({'error': 'Alert not found'}), 404
+            
+    except ValueError as e:
+        return jsonify({'error': f'Invalid data: {str(e)}'}), 400
+    except Exception as e:
+        return jsonify({'error': f'Failed to update alert: {str(e)}'}), 500
+
+@app.route('/api/alerts/check/<int:alert_id>', methods=['POST'])
+def check_alert_now(alert_id):
+    """Manually trigger a check for a specific alert."""
+    try:
+        alerts = alert_manager.get_alerts()
+        alert = next((a for a in alerts if a.id == alert_id), None)
+        
+        if not alert:
+            return jsonify({'error': 'Alert not found'}), 404
+        
+        if not alert.is_active:
+            return jsonify({'error': 'Alert is not active'}), 400
+        
+        triggered = alert_manager.check_alert(alert)
+        
+        return jsonify({
+            'success': True,
+            'triggered': triggered,
+            'message': 'Alert triggered and notifications sent' if triggered else 'Alert checked but not triggered'
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'Failed to check alert: {str(e)}'}), 500
+
+@app.route('/api/alerts/stats')
+def get_alert_stats():
+    """Get alert statistics."""
+    try:
+        stats = alert_manager.get_alert_statistics()
+        return jsonify({
+            'success': True,
+            'statistics': stats
+        })
+    except Exception as e:
+        return jsonify({'error': f'Failed to get statistics: {str(e)}'}), 500
+
+@app.route('/api/alerts/monitoring', methods=['POST'])
+def start_monitoring():
+    """Start alert monitoring."""
+    try:
+        interval = request.get_json().get('interval_minutes', 5)
+        alert_manager.start_monitoring(interval)
+        return jsonify({
+            'success': True,
+            'message': f'Alert monitoring started (checking every {interval} minutes)'
+        })
+    except Exception as e:
+        return jsonify({'error': f'Failed to start monitoring: {str(e)}'}), 500
+
+@app.route('/api/alerts/monitoring', methods=['DELETE'])
+def stop_monitoring():
+    """Stop alert monitoring."""
+    try:
+        alert_manager.stop_monitoring()
+        return jsonify({
+            'success': True,
+            'message': 'Alert monitoring stopped'
+        })
+    except Exception as e:
+        return jsonify({'error': f'Failed to stop monitoring: {str(e)}'}), 500
+
+@app.route('/keep-alive')
+def keep_alive():
+    """Keep-alive endpoint to prevent Render from sleeping."""
+    return jsonify({
+        'status': 'alive',
+        'timestamp': datetime.now().isoformat(),
+        'cro_monitoring': not cro_alert.alert_sent,
+        'next_check': '30 minutes'
+    })
+
 if __name__ == '__main__':
+    # Start CRO alert monitoring
+    print("🎯 Starting CRO alert monitoring (target: $0.26)")
+    cro_alert.start_monitoring(interval_minutes=2)
+    
     # Get port from environment variable for deployment
     port = int(os.environ.get('PORT', 5000))
     debug_mode = os.environ.get('FLASK_ENV') == 'development'
-    app.run(debug=debug_mode, host='0.0.0.0', port=port)
+    
+    try:
+        app.run(debug=debug_mode, host='0.0.0.0', port=port)
+    except KeyboardInterrupt:
+        print("\nShutting down...")
+        cro_alert.stop_monitoring()
+        print("CRO alert monitoring stopped.")
